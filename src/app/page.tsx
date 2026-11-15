@@ -12,7 +12,7 @@ import { AnalyzerPanel } from "@/components/studio/AnalyzerPanel";
 import { ControlDeck } from "@/components/studio/ControlDeck";
 import { TransportControls } from "@/components/studio/TransportControls";
 import { SiDisclosure } from "@/components/studio/SiDisclosure";
-import { NASA_TEXTURES, loadImage, rebuildDefaults } from "@/lib/sonus/textures";
+import { NASA_TEXTURES, loadImage, rebuildDefaults, loadRealData } from "@/lib/sonus/textures";
 import { initSequencer, stopSweep } from "@/lib/sonus/sequencer";
 import { engine } from "@/lib/sonus/audio-engine";
 import { useSonusStore } from "@/store/sonus-store";
@@ -27,7 +27,8 @@ import { useSonusStore } from "@/store/sonus-store";
  */
 export default function Page() {
   useEffect(() => {
-    // boot with the procedural fallback, then swap in the real NASA textures
+    // boot chain: procedural fallback -> real Blue/Black Marble base -> REAL
+    // SVS disc frames (3912/5313/5552) + REAL FIRMS/MODIS layer overlays
     rebuildDefaults(null, null);
     let cancelled = false;
     void Promise.all([loadImage(NASA_TEXTURES.day), loadImage(NASA_TEXTURES.night)]).then(
@@ -35,6 +36,11 @@ export default function Page() {
         if (!cancelled) rebuildDefaults(day, night);
       },
     );
+    void loadRealData().then((realDiscs) => {
+      if (cancelled) return;
+      const st = useSonusStore.getState();
+      for (const key of realDiscs) st.markRealFrame(key);
+    });
 
     const unsubSequencer = initSequencer();
 

@@ -1,20 +1,28 @@
 /**
  * SONUS texture + frame pipeline, ported from the v3 prototype.
  *
- * - NASA Blue Marble / Black Marble JPEGs are bundled with the app
- *   (src/assets/textures) — fully offline, no external URLs.
+ * REAL DATA (bundled, offline):
+ * - Disc frames: NASA SVS 3912 (ECCO2 currents+SST), SVS 5313 (VIIRS night
+ *   lights 2023, EIC), SVS 5552 (GEOS-5 aerosols, Science On A Sphere).
+ * - Layer overlays: FIRMS/VIIRS NOAA-20 active fires, MODIS Terra NDVI and
+ *   MODIS Terra cloud cover (GIBS Worldview snapshots).
+ * - Globe base: Blue Marble / Black Marble JPEGs (src/assets/textures).
  * - styleGlobe() ports v3's equirect->sphere projection renderer (the
- *   sonification source: shading, rim glow and procedural art are baked
- *   into these pixels exactly like v3).
- * - buildEquirect() renders the same NASA textures + procedural art in
- *   equirectangular space, used as the texture of the 3D WebGL globe.
- * - makeOverlaysEquirect() ports v3's FIRES/NDVI/CLOUDS detection onto
- *   equirect space so the layers wrap the 3D sphere.
- * - genEarthTex() is v3's procedural fallback if the JPEGs ever fail.
+ *   sonification source: shading and rim glow are baked into these pixels
+ *   exactly like v3; procedural art is skipped for real frames).
+ * - buildEquirect() renders the frame in equirectangular space, used as the
+ *   texture of the 3D WebGL globe.
+ * - genEarthTex() is v3's procedural fallback if any texture ever fails.
  */
 
 import dayTexImport from "@/assets/textures/blue-marble.jpg";
 import nightTexImport from "@/assets/textures/black-marble.jpg";
+import svsOceanImport from "@/assets/textures/svs/svs-ocean-3912.jpg";
+import svsNightImport from "@/assets/textures/svs/svs-night-5313.jpg";
+import svsAerosolImport from "@/assets/textures/svs/svs-aerosols-5552.jpg";
+import ovFiresImport from "@/assets/textures/svs/ov-firms-20261114.png";
+import ovNdviImport from "@/assets/textures/svs/ov-ndvi-modis-20261114.png";
+import ovCloudsImport from "@/assets/textures/svs/ov-clouds-modis-20261115.png";
 import {
   DiscKey,
   DiscStyle,
@@ -30,11 +38,25 @@ type StaticTexture = { src: string };
 
 const dayTex = dayTexImport as unknown as StaticTexture;
 const nightTex = nightTexImport as unknown as StaticTexture;
+const svsOceanTex = svsOceanImport as unknown as StaticTexture;
+const svsNightTex = svsNightImport as unknown as StaticTexture;
+const svsAerosolTex = svsAerosolImport as unknown as StaticTexture;
+const ovFiresTex = ovFiresImport as unknown as StaticTexture;
+const ovNdviTex = ovNdviImport as unknown as StaticTexture;
+const ovCloudsTex = ovCloudsImport as unknown as StaticTexture;
 
 /** Bundled NASA texture URLs (hashed static assets, basePath-safe). */
 export const NASA_TEXTURES = {
   day: dayTex.src,
   night: nightTex.src,
+  /** Real SVS disc frames — the sonification sources. */
+  oceanReal: svsOceanTex.src,
+  nightReal: svsNightTex.src,
+  aerosolReal: svsAerosolTex.src,
+  /** Real FIRMS/MODIS layer overlays (equirect, transparent PNGs). */
+  ovFires: ovFiresTex.src,
+  ovNdvi: ovNdviTex.src,
+  ovClouds: ovCloudsTex.src,
 };
 
 export function newCanvas(w: number, h: number): HTMLCanvasElement {
@@ -135,7 +157,7 @@ function sourcePixels(tex: TexSource): { tw: number; th: number; td: Uint8Clampe
   return { tw, th, td };
 }
 
-export function styleGlobe(tex: TexSource, style: DiscStyle): HTMLCanvasElement {
+export function styleGlobe(tex: TexSource, style: DiscStyle, real = false): HTMLCanvasElement {
   const c = newCanvas(FSZ, FSZ);
   const x = c.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
   const { tw, th, td } = sourcePixels(tex);
@@ -195,7 +217,9 @@ export function styleGlobe(tex: TexSource, style: DiscStyle): HTMLCanvasElement 
   }
   x.putImageData(out, 0, 0);
 
-  // procedural per-style art, clipped to the globe disc (v3 seeds: 11/47/83)
+  // procedural per-style art, clipped to the globe disc (v3 seeds: 11/47/83).
+  // Real NASA frames skip the art — the data IS the visual.
+  if (real) return c;
   x.save();
   x.beginPath();
   x.arc(C, C, GR - 1, 0, 7);
@@ -266,10 +290,11 @@ function drawCover(ctx: CanvasRenderingContext2D, tex: TexSource, w: number, h: 
 }
 
 /** Renders the disc style across the full equirect map (used by WebGL globe). */
-export function buildEquirect(tex: TexSource, style: DiscStyle): HTMLCanvasElement {
+export function buildEquirect(tex: TexSource, style: DiscStyle, real = false): HTMLCanvasElement {
   const c = newCanvas(EQ_W, EQ_H);
   const x = c.getContext("2d") as CanvasRenderingContext2D;
   drawCover(x, tex, EQ_W, EQ_H);
+  if (real) return c; // real frames need no procedural dressing
   const R = mulberry32(style === "ocean" ? 11 : style === "night" ? 47 : 83);
   if (style === "ocean") {
     x.fillStyle = "rgba(18,60,120,.16)";
@@ -433,12 +458,12 @@ export function buildDiscFrame(
   style: DiscStyle,
   real: boolean,
 ): DiscFrame {
-  const proj = styleGlobe(tex, style);
-  const equirect = buildEquirect(tex, style);
+  const proj = styleGlobe(tex, style, real);
+  const equirect = buildEquirect(tex, style, real);
   return {
     proj,
     projCtx: proj.getContext("2d", { willReadFrequently: true })!,
-    overlays: makeOverlaysEquirect(equirect),
+    overlays: getRealOverlays() ?? makeOverlaysEquirect(equirect),
     equirect,
     real,
   };
@@ -451,4 +476,78 @@ export function rebuildDefaults(day: HTMLImageElement | null, night: HTMLImageEl
   if (!frameStore.isReal("ocean")) frameStore.set("ocean", buildDiscFrame(dayT, "ocean", false));
   if (!frameStore.isReal("night")) frameStore.set("night", buildDiscFrame(nightT, "night", false));
   if (!frameStore.isReal("aerosol")) frameStore.set("aerosol", buildDiscFrame(dayT, "aerosol", false));
+}
+
+/* ------------------------------------------------------------------ */
+/* REAL DATA — bundled NASA SVS frames + FIRMS/MODIS layer overlays    */
+/* ------------------------------------------------------------------ */
+
+let realOverlays: OverlaySet | null = null;
+
+/** Returns the bundled real FIRMS/MODIS overlays once loaded (global layers). */
+export function getRealOverlays(): OverlaySet | null {
+  return realOverlays;
+}
+
+/** Attaches the real overlays to every cached frame and notifies listeners. */
+function applyRealOverlaysToAll(): void {
+  if (!realOverlays) return;
+  for (const key of ["ocean", "night", "aerosol"] as DiscKey[]) {
+    const f = frameStore.get(key);
+    if (f) frameStore.set(key, { ...f, overlays: realOverlays });
+  }
+}
+
+/** Draws an overlay source onto an EQ-sized equirect canvas (cover fit). */
+function buildOverlayCanvas(tex: TexSource): HTMLCanvasElement {
+  const c = newCanvas(EQ_W, EQ_H);
+  const x = c.getContext("2d") as CanvasRenderingContext2D;
+  drawCover(x, tex, EQ_W, EQ_H);
+  return c;
+}
+
+/**
+ * Loads the bundled REAL NASA data:
+ * 1. the three SVS disc frames (SVS 3912 ECCO2 / 5313 VIIRS 2023 / 5552 GEOS-5)
+ *    become the projected sphere + 3D globe texture AND the sonification
+ *    source of each disc (marked real in the store);
+ * 2. the FIRMS/VIIRS fires + MODIS NDVI + MODIS clouds equirect overlays
+ *    replace the pixel-derived procedural layers on every disc.
+ *
+ * Returns the disc keys that got real frames ("procedural" stays the
+ * fallback if a bundled image ever fails to decode).
+ */
+export async function loadRealData(): Promise<DiscKey[]> {
+  const [ocean, night, aerosol, fires, ndvi, clouds] = await Promise.all([
+    loadImage(NASA_TEXTURES.oceanReal),
+    loadImage(NASA_TEXTURES.nightReal),
+    loadImage(NASA_TEXTURES.aerosolReal),
+    loadImage(NASA_TEXTURES.ovFires),
+    loadImage(NASA_TEXTURES.ovNdvi),
+    loadImage(NASA_TEXTURES.ovClouds),
+  ]);
+
+  const real: DiscKey[] = [];
+  if (ocean) {
+    frameStore.set("ocean", buildDiscFrame(ocean, "ocean", true));
+    real.push("ocean");
+  }
+  if (night) {
+    frameStore.set("night", buildDiscFrame(night, "night", true));
+    real.push("night");
+  }
+  if (aerosol) {
+    frameStore.set("aerosol", buildDiscFrame(aerosol, "aerosol", true));
+    real.push("aerosol");
+  }
+
+  if (fires && ndvi && clouds) {
+    realOverlays = {
+      fires: buildOverlayCanvas(fires),
+      ndvi: buildOverlayCanvas(ndvi),
+      clouds: buildOverlayCanvas(clouds),
+    };
+    applyRealOverlaysToAll();
+  }
+  return real;
 }

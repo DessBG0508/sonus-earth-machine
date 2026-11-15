@@ -41,7 +41,7 @@ export function LoaderRow() {
           ? "Real frame projected onto " + DISCS[disc].num + " — it is now the sonification source."
           : ok === false
             ? "Could not read that file — use a PNG or JPG equirectangular frame."
-            : "Drop an equirectangular NASA SVS frame on the globe — it is projected onto the sphere and sonified."}
+            : "This disc already sonifies a real NASA SVS frame — drop any other equirectangular frame on the globe to swap it."}
       </span>
     </div>
   );

@@ -9,10 +9,10 @@ import { useSonusStore } from "@/store/sonus-store";
 
 function legendText(layers: { fires: boolean; ndvi: boolean; clouds: boolean }): string {
   const on: string[] = [];
-  if (layers.fires) on.push("FIRES on — amber markers + percussive pings on hot pixels");
-  if (layers.ndvi) on.push("NDVI on — green vegetation tint + soft green notes");
-  if (layers.clouds) on.push("CLOUDS on — translucent cloud wisps + airy shimmer");
-  return on.length ? on.join(" · ") : "none active — toggle FIRES / NDVI / CLOUDS above";
+  if (layers.fires) on.push("FIRES on — REAL FIRMS/VIIRS active fire anomalies + percussive pings on hot pixels");
+  if (layers.ndvi) on.push("NDVI on — REAL MODIS Terra vegetation tint + soft green notes");
+  if (layers.clouds) on.push("CLOUDS on — REAL MODIS Terra cloud cover + airy shimmer");
+  return on.length ? on.join(" · ") : "none active — toggle REAL FIRMS / NDVI / CLOUDS layers above";
 }
 
 /** Stage meta row under the globe: layer legend + sweep % + frame source. */
@@ -40,7 +40,7 @@ export function StageMeta() {
       </span>
       <span className="font-mono text-[11px] text-hud">
         SWEEP <span ref={sweepRef}>000</span>% ·{" "}
-        <span className={real ? "text-neon" : ""}>{real ? "REAL FRAME ON GLOBE" : "NASA TEXTURE GLOBE"}</span> ·{" "}
+        <span className={real ? "text-neon" : ""}>{real ? "REAL NASA DATA ON GLOBE" : "NASA TEXTURE GLOBE"}</span> ·{" "}
         <span className="font-mono text-[9.5px] tracking-[0.12em] text-neon opacity-75">{LINK_HEX} · LINK OK</span>
       </span>
     </div>

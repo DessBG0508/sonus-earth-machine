@@ -586,7 +586,7 @@ export function GlobeStage() {
       <div className="pointer-events-none absolute left-3 top-3 z-10 select-none font-mono text-[9px] leading-[15px] text-mut/80">
         <div>SONIC MAPPER v4.0</div>
         <div>GLOBE WEBGL 3D · R 168PX</div>
-        <div>SENSOR ARRAY OK</div>
+        <div className="text-neon/80">REAL SVS + FIRMS/MODIS DATA</div>
         <div className="text-hud/70">96 COLS · 8 ROWS GRID</div>
       </div>
       <div className="pointer-events-none absolute right-3 top-3 z-10 select-none text-right font-mono text-[9px] leading-[15px]">

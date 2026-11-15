@@ -146,7 +146,7 @@ export function HeaderBar() {
         <div className="hidden rounded-[2px] border border-hud/15 bg-[rgba(4,8,18,.8)] px-3 py-1.5 lg:block">
           <span className="block text-[8.5px] tracking-[0.22em] text-mut">FRAME</span>
           <span className={`font-mono text-[11px] ${sourceTag === "real" ? "text-neon" : "text-mut"}`}>
-            {sourceTag === "real" ? "REAL FRAME ON GLOBE" : "NASA TEXTURE GLOBE"}
+            {sourceTag === "real" ? "REAL NASA SVS DATA" : "NASA TEXTURE GLOBE"}
           </span>
         </div>
       </div>

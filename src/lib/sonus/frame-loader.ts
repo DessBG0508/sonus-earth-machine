@@ -30,6 +30,8 @@ export async function loadUserFrame(file: File): Promise<boolean> {
     tx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, EQ_W, EQ_H);
 
     const disc = useSonusStore.getState().disc;
+    // buildDiscFrame attaches the bundled real FIRMS/MODIS overlays when they
+    // are loaded, and falls back to v3 pixel-derived layers otherwise
     frameStore.set(disc, buildDiscFrame(tc, "raw", true));
     useSonusStore.getState().markRealFrame(disc);
     return true;
