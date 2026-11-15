@@ -16,6 +16,9 @@ const grotesk = Space_Grotesk({
   display: "swap",
 });
 
+const PROD_BASE = "/sonus-earth-machine";
+const isProd = process.env.NODE_ENV === "production";
+
 export const metadata: Metadata = {
   title: "SONUS v4 — The Earth Information Machine",
   description:
@@ -29,6 +32,13 @@ export const metadata: Metadata = {
     "web audio",
   ],
   authors: [{ name: "Team Tesh Sonus" }],
+  metadataBase: new URL("https://dessbg0508.github.io"),
+  openGraph: {
+    title: "SONUS — The Earth Information Machine",
+    description:
+      "Turn NASA Earth imagery into real-time sound. NASA Space Apps Challenge 2026 · Team Tesh Sonus · DESDE 2026.",
+    images: [{ url: `${isProd ? PROD_BASE : ""}/brand/sonus-logo-full.png`, width: 900, height: 969 }],
+  },
 };
 
 export const viewport: Viewport = {

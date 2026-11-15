@@ -1,35 +1,25 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { DATE_TAG, DISCS } from "@/lib/sonus/constants";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSonusStore, type FrameSourceKind } from "@/store/sonus-store";
 import { LayerToggles } from "./LayerToggles";
+import brandGlobe from "@/assets/brand/sonus-globe.png";
 
+/** Official SONUS brand mark — the neon circuit globe from the team logo. */
 function BrandMark() {
   return (
-    <svg width="42" height="42" viewBox="0 0 48 48" aria-hidden="true" className="drop-shadow-[0_0_12px_rgba(139,92,246,0.55)]">
-      <defs>
-        <radialGradient id="sonusBrandLg" cx="38%" cy="32%" r="75%">
-          <stop offset="0%" stopColor="#C084FC" />
-          <stop offset="55%" stopColor="#8B5CF6" />
-          <stop offset="100%" stopColor="#3B1D6E" />
-        </radialGradient>
-      </defs>
-      <circle cx="24" cy="24" r="19" fill="url(#sonusBrandLg)" stroke="#FF2D92" strokeWidth="1.2" />
-      <g stroke="#E9D5FF" strokeWidth="1.1" fill="none" opacity=".85">
-        <path d="M24 5 v7 M24 43 v-7 M5 24 h7 M43 24 h-7" />
-        <path d="M11 11 l5 5 M37 11 l-5 5 M11 37 l5 -5 M37 37 l-5 -5" />
-        <path d="M24 12 a12 12 0 0 1 12 12 M24 36 a12 12 0 0 1 -12 -12" opacity=".55" />
-      </g>
-      <g fill="#F3E8FF">
-        <circle cx="24" cy="12" r="1.8" />
-        <circle cx="24" cy="36" r="1.8" />
-        <circle cx="12" cy="24" r="1.8" />
-        <circle cx="36" cy="24" r="1.8" />
-      </g>
-      <circle cx="24" cy="24" r="3.2" fill="#FF2D92" />
-    </svg>
+    <Image
+      src={brandGlobe}
+      alt=""
+      aria-hidden="true"
+      width={42}
+      height={42}
+      priority
+      className="h-[42px] w-[42px] shrink-0 object-contain drop-shadow-[0_0_14px_rgba(139,92,246,0.65)]"
+    />
   );
 }
 
@@ -108,7 +98,7 @@ export function HeaderBar() {
             SONUS
           </div>
           <div className="mt-1.5 text-[9px] uppercase tracking-[0.26em] text-mut">
-            The Earth Information Machine // J.A.R.V.I.S. EDITION
+            The Earth Information Machine // J.A.R.V.I.S. EDITION // DESDE 2026
           </div>
         </div>
         <div
